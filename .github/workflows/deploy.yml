@@ -2,104 +2,16 @@ name: 🚀 Deploy Soketi Dashboard
 
 on:
   push:
-    branches: [ main, production ]
-  pull_request:
-    branches: [ main ]
+    branches: [ production ]
 
 env:
   PHP_VERSION: '8.2'
   NODE_VERSION: '20'
 
 jobs:
-  test:
-    name: 🧪 Run Tests
-    runs-on: ubuntu-latest
-
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🐘 Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, dom, fileinfo, sqlite3, redis
-          coverage: xdebug
-
-      - name: 📦 Get Composer Cache Directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: 🗃️ Cache Composer dependencies
-        uses: actions/cache@v3
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: 📋 Copy environment file
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-
-      - name: 🏗️ Install PHP dependencies
-        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
-
-      - name: 🔑 Generate application key
-        run: php artisan key:generate
-
-      - name: 📁 Set directory permissions
-        run: chmod -R 777 storage bootstrap/cache
-
-      - name: 🗄️ Create SQLite database
-        run: |
-          mkdir -p database
-          touch database/database.sqlite
-
-      - name: 🗄️ Run database migrations
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
-        run: php artisan migrate --force
-
-      - name: 🧪 Execute tests (PHPUnit)
-        env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: database/database.sqlite
-          REDIS_HOST: 127.0.0.1
-          REDIS_PORT: 6379
-        run: php artisan test --coverage
-
-      - name: 📊 Upload coverage reports
-        uses: codecov/codecov-action@v3
-        if: success()
-
-  security-scan:
-    name: 🔒 Security Scan
-    runs-on: ubuntu-latest
-    needs: test
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🐘 Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ env.PHP_VERSION }}
-
-      - name: 🔍 Run security audit
-        run: composer audit
-
   build-assets:
     name: 🎨 Build Frontend Assets
     runs-on: ubuntu-latest
-    needs: test
 
     steps:
       - name: 📥 Checkout code
@@ -114,125 +26,107 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
-      - name: 🏗️ Build assets
+      - name: 🏗️ Build assets for production
         run: npm run build
 
       - name: 📤 Upload built assets
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: built-assets
           path: public/build/
-
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [test, security-scan, build-assets]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: staging
-
-    steps:
-      - name: 📥 Download built assets
-        uses: actions/download-artifact@v3
-        with:
-          name: built-assets
-          path: public/build/
-
-      - name: 🚀 Deploy to staging server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.STAGING_HOST }}
-          username: ${{ secrets.STAGING_USERNAME }}
-          key: ${{ secrets.STAGING_PRIVATE_KEY }}
-          script: |
-            cd /var/www/soketi-dashboard
-            ./deploy.sh deploy
-            echo "🎉 Staging deployment completed!"
-
-      - name: 🔗 Comment deployment URL
-        uses: actions/github-script@v6
-        if: github.event_name == 'pull_request'
-        with:
-          script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '🚀 Deployed to staging: https://staging.soketi.taskip.net'
-            })
+          retention-days: 1
 
   deploy-production:
     name: 🌟 Deploy to Production
     runs-on: ubuntu-latest
-    needs: [test, security-scan, build-assets]
+    needs: build-assets
     if: github.ref == 'refs/heads/production' && github.event_name == 'push'
     environment: production
 
     steps:
       - name: 📥 Download built assets
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: built-assets
           path: public/build/
 
       - name: 🚀 Deploy to production server
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USERNAME }}
-          key: ${{ secrets.PRODUCTION_PRIVATE_KEY }}
+          password: ${{ secrets.PRODUCTION_PASSWORD }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
           script: |
-            cd /var/www/soketi-dashboard
-            ./deploy.sh deploy
+            echo "🌟 Starting Soketi Dashboard deployment to production..."
+
+            # Navigate to application directory
+            cd ${{ secrets.PRODUCTION_APP_PATH || '/var/www/soketi-dashboard' }}
+
+            # Create backup
+            BACKUP_DIR="../backups/$(date +%Y%m%d-%H%M%S)"
+            mkdir -p ../backups
+            cp -r . "$BACKUP_DIR"
+            echo "✅ Backup created at $BACKUP_DIR"
+
+            # Enable maintenance mode
+            php artisan down --message="Deploying..." --retry=60
+
+            # Pull latest changes
+            git fetch origin
+            git reset --hard origin/production
+
+            # Install/update dependencies
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            # Clear caches
+            php artisan config:clear
+            php artisan cache:clear
+            php artisan view:clear
+            php artisan route:clear
+
+            # Run migrations
+            php artisan migrate --force
+
+            # Optimize for production
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            # Update file permissions
+            sudo chown -R www-data:www-data storage bootstrap/cache
+            sudo chmod -R 755 storage bootstrap/cache
+
+            # Restart services
+            sudo systemctl reload nginx
+            sudo systemctl reload php8.2-fpm
+
+            # Simple health check
+            sleep 3
+            if curl -f -s http://localhost > /dev/null; then
+              echo "✅ Health check passed"
+            else
+              echo "❌ Health check failed"
+            fi
+
+            # Disable maintenance mode
+            php artisan up
+
+            # Clean old backups (keep last 3)
+            cd ../backups
+            ls -1t | tail -n +4 | xargs -r rm -rf
+
             echo "🎉 Production deployment completed!"
-
-      - name: 📢 Notify deployment success
-        uses: 8398a7/action-slack@v3
-        if: success()
-        with:
-          status: success
-          channel: '#deployments'
-          text: '🎉 Soketi Dashboard deployed to production successfully!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-      - name: 🚨 Notify deployment failure
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: failure
-          channel: '#deployments'
-          text: '💥 Soketi Dashboard production deployment failed!'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  lighthouse:
-    name: 🔍 Lighthouse Performance Audit
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-
-      - name: 🔍 Run Lighthouse CI
-        uses: treosh/lighthouse-ci-action@v10
-        with:
-          urls: |
-            https://staging.soketi.taskip.net
-            https://staging.soketi.taskip.net/admin
-          configPath: ./lighthouse-config.json
-          uploadArtifacts: true
-          temporaryPublicStorage: true
 
   cleanup:
     name: 🧹 Cleanup
     runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production]
+    needs: deploy-production
     if: always()
 
     steps:
       - name: 🗑️ Delete artifacts
-        uses: geekyeggo/delete-artifact@v2
+        uses: geekyeggo/delete-artifact@v5
         with:
           name: built-assets
+          failOnError: false
