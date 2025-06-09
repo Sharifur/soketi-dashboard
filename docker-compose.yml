@@ -5,13 +5,13 @@ services:
         build:
             context: .
             dockerfile: Dockerfile
-        container_name: soketi-dashboard
+        container_name: soketi-admin
         restart: always
         ports:
-            - "8000:8000"  # expose to host for Nginx to reverse proxy
+            - "8000:8000"
         volumes:
-            - .:/var/www/html
-            - ./storage:/var/www/html/storage
+            - .:/var/www/soketi-admin
+            - ./storage:/var/www/soketi-admin/storage
         environment:
             - APP_ENV=production
             - APP_DEBUG=false
