@@ -28,6 +28,11 @@ jobs:
             # Navigate to application directory
             cd ${{ secrets.PRODUCTION_APP_PATH }}
 
+            # Debug: Check current git status
+            echo "📍 Current directory: $(pwd)"
+            echo "📍 Git status before deployment:"
+            git status || echo "⚠️ Not a git repository or git error"
+
             # Create backup
             BACKUP_DIR="../backups/$(date +%Y%m%d-%H%M%S)"
             mkdir -p ../backups
@@ -37,52 +42,86 @@ jobs:
             # Enable maintenance mode
             php artisan down --message="Deploying..." --retry=60
 
-            # Pull latest changes
-            git fetch origin
+            # Enhanced git operations with debugging
+            echo "🔄 Fetching latest changes..."
+            git fetch origin --verbose
+
+            echo "📋 Available branches:"
+            git branch -a
+
+            echo "🔄 Current branch and commit:"
+            git branch
+            git log --oneline -1
+
+            echo "🔄 Resetting to origin/production..."
             git reset --hard origin/production
+
+            echo "🧹 Cleaning untracked files..."
             git clean -fd
 
+            echo "✅ After git operations:"
+            git log --oneline -1
+            git status
+
+            # Alternative approach if the above doesn't work:
+            # Uncomment these lines and comment out the git reset approach above
+            # echo "🔄 Alternative: Using git pull..."
+            # git stash push -m "Pre-deployment stash $(date)"
+            # git checkout production
+            # git pull origin production --force
+
             # Install/update PHP dependencies
+            echo "📦 Installing PHP dependencies..."
             composer install --no-dev --optimize-autoloader --no-interaction
 
             # Install/update NPM dependencies and build assets
+            echo "📦 Installing NPM dependencies..."
             npm ci
+            echo "🏗️ Building assets..."
             npm run build
 
             # Clear caches
+            echo "🧹 Clearing caches..."
             php artisan config:clear
             php artisan cache:clear
             php artisan view:clear
             php artisan route:clear
 
             # Run migrations
+            echo "🗄️ Running migrations..."
             php artisan migrate --force
 
             # Optimize for production
+            echo "⚡ Optimizing for production..."
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
 
             # Update file permissions
+            echo "🔐 Updating file permissions..."
             sudo chown -R www-data:www-data storage bootstrap/cache public/build
             sudo chmod -R 755 storage bootstrap/cache public/build
 
             # Restart services
+            echo "🔄 Restarting services..."
             sudo systemctl reload nginx
             sudo systemctl reload php8.2-fpm
 
-            # Simple health check
+            # Enhanced health check
+            echo "🩺 Performing health check..."
             sleep 3
             if curl -f -s http://localhost > /dev/null; then
               echo "✅ Health check passed"
             else
-              echo "❌ Health check failed"
+              echo "❌ Health check failed - checking logs..."
+              tail -n 10 /var/log/nginx/error.log || echo "Could not read nginx logs"
             fi
 
             # Disable maintenance mode
             php artisan up
 
             # Clean old backups (keep last 3)
+            echo "🧹 Cleaning old backups..."
             cd ../backups
             ls -1t | tail -n +4 | xargs -r rm -rf
 
