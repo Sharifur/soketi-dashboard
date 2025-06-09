@@ -192,22 +192,31 @@ class SoketiStatsOverview extends BaseWidget
         ];
     }
 
-    protected function getPeakConnectionsStats(): array
+    public function getPeakConnectionsStats(): ?array
     {
-        // Find today's peak connections
         $today = now()->startOfDay();
+
+        $driver = \DB::getDriverName();
+
+        $timeFormat = $driver === 'sqlite'
+            ? "strftime('%H:%M', connected_at)"
+            : "DATE_FORMAT(connected_at, '%H:%i')";
+
         $peak = SoketiConnection::where('connected_at', '>=', $today)
-            ->selectRaw('COUNT(*) as count, DATE_FORMAT(connected_at, "%H:%i") as time')
+            ->selectRaw("COUNT(*) as count, {$timeFormat} as time")
             ->groupBy('time')
-            ->orderBy('count', 'desc')
+            ->orderByDesc('count')
             ->first();
 
+        if (!$peak) {
+            return null;
+        }
+
         return [
-            'peak' => $peak->count ?? 0,
-            'time' => $peak->time ?? '--:--',
+            'time' => $peak->time,
+            'count' => $peak->count,
         ];
     }
-
     protected function getPollingInterval(): ?string
     {
         return '30s'; // Refresh every 30 seconds
