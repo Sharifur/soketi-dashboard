@@ -6,7 +6,7 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: soketi-dashboard
-        restart: unless-stopped
+        restart: always
         ports:
             - "8000:8000"
         volumes:
