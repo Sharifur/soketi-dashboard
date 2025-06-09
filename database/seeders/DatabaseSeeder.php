@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\SoketiApp;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -37,9 +38,9 @@ class DatabaseSeeder extends Seeder
         // Create sample Soketi applications
         SoketiApp::create([
             'name' => 'Main Application',
-            'app_id' => 'app-id',
-            'app_key' => 'app-key',
-            'app_secret' => 'app-secret',
+            'app_id' => random_int(000000000,999999999),
+            'app_key' => Str::random(16),
+            'app_secret' =>  Str::random(16),
             'description' => 'Primary Soketi application for production use',
             'max_connections' => 1000,
             'enable_client_messages' => true,
@@ -51,6 +52,9 @@ class DatabaseSeeder extends Seeder
 
         SoketiApp::create([
             'name' => 'Chat Application',
+            'app_id' => random_int(000000000,999999999),
+            'app_key' => Str::random(16),
+            'app_secret' =>  Str::random(16),
             'description' => 'Real-time chat application with presence channels',
             'max_connections' => 500,
             'enable_client_messages' => true,
@@ -66,6 +70,9 @@ class DatabaseSeeder extends Seeder
 
         SoketiApp::create([
             'name' => 'Notification Service',
+            'app_id' => random_int(000000000,999999999),
+            'app_key' => Str::random(16),
+            'app_secret' =>  Str::random(16),
             'description' => 'Push notifications and alerts system',
             'max_connections' => 250,
             'enable_client_messages' => false,
@@ -85,6 +92,9 @@ class DatabaseSeeder extends Seeder
 
         SoketiApp::create([
             'name' => 'Development App',
+            'app_id' => random_int(000000000,999999999),
+            'app_key' => Str::random(16),
+            'app_secret' =>  Str::random(16),
             'description' => 'Development and testing environment',
             'max_connections' => 50,
             'enable_client_messages' => true,
@@ -96,6 +106,9 @@ class DatabaseSeeder extends Seeder
 
         SoketiApp::create([
             'name' => 'Analytics Dashboard',
+            'app_id' => random_int(000000000,999999999),
+            'app_key' => Str::random(16),
+            'app_secret' =>  Str::random(16),
             'description' => 'Real-time analytics and metrics visualization',
             'max_connections' => 100,
             'enable_client_messages' => false,
