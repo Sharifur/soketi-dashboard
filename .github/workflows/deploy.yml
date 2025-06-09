@@ -1,42 +1,161 @@
-name: Laravel Github CI/CD
+name: 🚀 Deploy Soketi Dashboard
+
 on:
   push:
-    branches: [ main ]
-    #pull_request:
-    #branches: [ main ]
+    branches: [ production ]
+
+env:
+  PHP_VERSION: '8.2'
 
 jobs:
-  web-deploy:
-    name: Deploying
+  build:
+    name: 🏗️ Build Application
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production'
+
     steps:
-      - name: Setup PHP with composer v2
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: production
+
+      - name: 🏗️ Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
-          tools: composer:v2
-      - name: Print PHP version
-        run: echo ${{ steps.setup-php.outputs.php-version }}
-      - uses: actions/checkout@v4
-        #- name: Copy .env
-        #run: php -r "file_exists('.env') || copy('.env.example', '.env');"
-      - name: Install Dependencies
-        run: composer install --ignore-platform-reqs
-        #- name: Generate key
-        #run: php artisan key:generate
-      - name: Directory Permissions
-        run: chmod -R 775 storage
-      - name: 📂 Sync files
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite
+
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          server: ${{ secrets.PRODUCTION_HOST }}
+          node-version: '18'
+          cache: 'npm'
+
+      - name: 📦 Install dependencies and build
+        run: |
+          composer install --no-dev --optimize-autoloader --no-interaction
+          npm ci
+          npm run build
+          rm -rf node_modules tests .env.example
+
+      - name: 📦 Create deployment package
+        run: |
+          tar -czf deployment-$(date +%s).tar.gz \
+            --exclude='.git' \
+            --exclude='storage/app/*' \
+            --exclude='storage/logs/*' \
+            --exclude='storage/framework/sessions/*' \
+            --exclude='storage/framework/cache/*' \
+            .
+
+      - name: 📤 Upload to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
           username: ${{ secrets.PRODUCTION_USERNAME }}
           password: ${{ secrets.PRODUCTION_PASSWORD }}
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/api-doc/**
-            **/vendor/**
-            **/bootstrap/cache/**
-          server-dir:  ${{ secrets.PRODUCTION_APP_PATH }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          source: "deployment-*.tar.gz"
+          target: "/tmp/"
+
+  deploy:
+    name: 🌟 Deploy to Production
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚀 Execute deployment on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PRODUCTION_HOST }}
+          username: ${{ secrets.PRODUCTION_USERNAME }}
+          password: ${{ secrets.PRODUCTION_PASSWORD }}
+          port: ${{ secrets.PRODUCTION_PORT || 22 }}
+          script: |
+            echo "🌟 Starting deployment process..."
+
+            cd ${{ secrets.PRODUCTION_APP_PATH }}
+
+            # Create backup
+            BACKUP_DIR="../backups/$(date +%Y%m%d-%H%M%S)"
+            mkdir -p ../backups
+            cp -r . "$BACKUP_DIR"
+            echo "✅ Backup created at $BACKUP_DIR"
+
+            # Enable maintenance mode
+            php artisan down --message="Deploying..." --retry=60
+
+            # Find and extract the latest deployment package
+            LATEST_PACKAGE=$(ls -t /tmp/deployment-*.tar.gz | head -1)
+            if [ -f "$LATEST_PACKAGE" ]; then
+              echo "📦 Extracting $LATEST_PACKAGE"
+
+              # Preserve important files
+              cp .env /tmp/env-backup 2>/dev/null || echo "No .env to backup"
+              cp -r storage/app /tmp/app-backup 2>/dev/null || echo "No storage/app to backup"
+              cp -r storage/logs /tmp/logs-backup 2>/dev/null || echo "No storage/logs to backup"
+
+              # Copy archive to app directory
+              cp "$LATEST_PACKAGE" ./
+              ARCHIVE_NAME=$(basename "$LATEST_PACKAGE")
+
+              # Extract new code
+              tar -xzf "$ARCHIVE_NAME" --strip-components=0
+              rm -f "$ARCHIVE_NAME"
+
+              # Restore preserved files
+              cp /tmp/env-backup .env 2>/dev/null || echo "No .env to restore"
+              mkdir -p storage
+              cp -r /tmp/app-backup storage/app 2>/dev/null || echo "No storage/app to restore"
+              cp -r /tmp/logs-backup storage/logs 2>/dev/null || echo "No storage/logs to restore"
+
+              # Clean up temp files
+              rm -f /tmp/env-backup /tmp/app-backup /tmp/logs-backup 2>/dev/null
+
+              echo "✅ Deployment package extracted successfully"
+            else
+              echo "❌ No deployment package found!"
+              php artisan up
+              exit 1
+            fi
+
+            # Ensure required directories
+            mkdir -p storage/app/public
+            mkdir -p storage/framework/{cache,sessions,views}
+            mkdir -p storage/logs
+            mkdir -p bootstrap/cache
+
+            # Laravel commands
+            php artisan migrate --force
+            php artisan config:clear
+            php artisan cache:clear
+            php artisan view:clear
+            php artisan route:clear
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+
+            # Set permissions
+            sudo chown -R www-data:www-data storage bootstrap/cache public/build
+            sudo chmod -R 755 storage bootstrap/cache public/build
+
+            # Restart services
+            sudo systemctl reload nginx
+            sudo systemctl reload php8.2-fpm
+
+            # Health check
+            sleep 3
+            if curl -f -s http://localhost > /dev/null; then
+              echo "✅ Health check passed"
+            else
+              echo "❌ Health check failed"
+            fi
+
+            # Disable maintenance mode
+            php artisan up
+
+            # Clean old backups (keep last 3)
+            cd ../backups
+            ls -1t | tail -n +4 | xargs -r rm -rf
+
+            echo "🎉 Webhook deployment completed!"
