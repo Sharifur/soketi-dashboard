@@ -58,7 +58,6 @@ jobs:
           source: "deployment-*.tar.gz"
           target: "/tmp/"
 
-
   deploy:
     name: 🌟 Deploy to Production
     needs: build
@@ -96,8 +95,13 @@ jobs:
               cp -r storage/app /tmp/app-backup 2>/dev/null || echo "No storage/app to backup"
               cp -r storage/logs /tmp/logs-backup 2>/dev/null || echo "No storage/logs to backup"
 
-              # Extract new files
-              tar -xzf "$LATEST_PACKAGE" --strip-components=0
+              # Copy archive to app directory
+              cp "$LATEST_PACKAGE" ./
+              ARCHIVE_NAME=$(basename "$LATEST_PACKAGE")
+
+              # Extract new code
+              tar -xzf "$ARCHIVE_NAME" --strip-components=0
+              rm -f "$ARCHIVE_NAME"
 
               # Restore preserved files
               cp /tmp/env-backup .env 2>/dev/null || echo "No .env to restore"
@@ -106,7 +110,6 @@ jobs:
               cp -r /tmp/logs-backup storage/logs 2>/dev/null || echo "No storage/logs to restore"
 
               # Clean up temp files
-              rm -f "$LATEST_PACKAGE"
               rm -f /tmp/env-backup /tmp/app-backup /tmp/logs-backup 2>/dev/null
 
               echo "✅ Deployment package extracted successfully"
@@ -116,7 +119,7 @@ jobs:
               exit 1
             fi
 
-            # Ensure storage directories exist
+            # Ensure required directories
             mkdir -p storage/app/public
             mkdir -p storage/framework/{cache,sessions,views}
             mkdir -p storage/logs
