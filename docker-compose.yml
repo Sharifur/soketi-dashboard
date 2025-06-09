@@ -8,24 +8,10 @@ services:
         container_name: soketi-dashboard
         restart: always
         ports:
-            - "8000:8000"
+            - "8000:8000"  # expose to host for Nginx to reverse proxy
         volumes:
             - .:/var/www/html
             - ./storage:/var/www/html/storage
         environment:
             - APP_ENV=production
             - APP_DEBUG=false
-
-    nginx:
-        image: nginx:alpine
-        container_name: soketi-nginx
-        restart: unless-stopped
-        ports:
-            - "80:80"
-            - "443:443"
-        volumes:
-            - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
-            - ./docker/nginx/sites/:/etc/nginx/sites-available/
-            - ./docker/nginx/ssl/:/etc/ssl/certs/
-        depends_on:
-            - app
