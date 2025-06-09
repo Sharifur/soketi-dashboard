@@ -209,7 +209,10 @@ class SoketiStatsOverview extends BaseWidget
             ->first();
 
         if (!$peak) {
-            return null;
+            return [
+                'time' => 'N/A',
+                'count' => 0,
+            ];
         }
 
         return [
