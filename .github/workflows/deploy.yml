@@ -37,16 +37,17 @@ jobs:
           npm ci
           npm run build
           rm -rf node_modules tests .env.example
-
       - name: 📦 Create deployment package
         run: |
-          tar -czf deployment-$(date +%s).tar.gz \
-            --exclude='.git' \
-            --exclude='storage/app/*' \
-            --exclude='storage/logs/*' \
-            --exclude='storage/framework/sessions/*' \
-            --exclude='storage/framework/cache/*' \
-            .
+          mkdir -p build
+          rsync -a --exclude=.git --exclude=node_modules --exclude=tests \
+            --exclude=storage/app/* --exclude=storage/logs/* \
+            --exclude=storage/framework/sessions/* --exclude=storage/framework/cache/* \
+            ./ build/
+
+          cd build
+          tar --ignore-failed-read -czf ../deployment-$(date +%s).tar.gz .
+          cd ..
 
       - name: 📤 Upload to server
         uses: appleboy/scp-action@v0.1.7
