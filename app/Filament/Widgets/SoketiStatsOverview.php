@@ -211,6 +211,7 @@ class SoketiStatsOverview extends BaseWidget
         if (!$peak) {
             return [
                 'time' => 'N/A',
+                'peak' => 0,
                 'count' => 0,
             ];
         }
