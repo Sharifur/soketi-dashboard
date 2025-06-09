@@ -390,4 +390,27 @@ class SoketiAppResource extends Resource
 
         return 'primary';
     }
+
+    public static function afterCreate()
+    {
+        return function (SoketiApp $record) {
+            $record->refresh(); // ensure latest data
+            $record->fireModelEvent('created', false);
+        };
+    }
+
+    public static function afterUpdate()
+    {
+        return function (SoketiApp $record) {
+            $record->fireModelEvent('updated', false);
+        };
+    }
+
+    public static function afterDelete()
+    {
+        return function (SoketiApp $record) {
+            $record->fireModelEvent('deleted', false);
+        };
+    }
+
 }

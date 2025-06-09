@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\SoketiApp;
 use App\Services\SoketiConfigService;
+use Illuminate\Support\Facades\Log;
 
 class SoketiAppObserver
 {
@@ -19,6 +20,7 @@ class SoketiAppObserver
      */
     public function created(SoketiApp $soketiApp): void
     {
+        Log::info('SoketiApp created');
         $this->configService->syncToConfig();
     }
 

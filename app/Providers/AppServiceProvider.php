@@ -13,7 +13,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        SoketiApp::observe(SoketiAppObserver::class);
+
     }
 
     /**
@@ -21,6 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        SoketiApp::observe(SoketiAppObserver::class);
     }
 }
