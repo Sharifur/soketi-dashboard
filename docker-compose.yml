@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: soketi-dashboard
+        restart: unless-stopped
+        ports:
+            - "8000:8000"
+        volumes:
+            - .:/var/www/html
+            - ./storage:/var/www/html/storage
+        environment:
+            - APP_ENV=production
+            - APP_DEBUG=false
+        depends_on:
+            - mysql
+            - redis
+            - soketi
+
+    mysql:
+        image: mysql:8.0
+        container_name: soketi-mysql
+        restart: unless-stopped
+        ports:
+            - "3306:3306"
+        environment:
+            MYSQL_DATABASE: soketi_dashboard
+            MYSQL_USER: soketi
+            MYSQL_PASSWORD: soketi_password
+            MYSQL_ROOT_PASSWORD: root_password
+        volumes:
+            - mysql_data:/var/lib/mysql
+
+    redis:
+        image: redis:7-alpine
+        container_name: soketi-redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        command: redis-server --requirepass redis_password
+
+    soketi:
+        image: quay.io/soketi/soketi:latest-16-alpine
+        container_name: soketi-server
+        restart: unless-stopped
+        ports:
+            - "6001:6001"
+            - "9601:9601"
+        environment:
+            SOKETI_DEBUG: "false"
+            SOKETI_METRICS_ENABLED: "true"
+            SOKETI_DEFAULT_APP_ID: "app-id"
+            SOKETI_DEFAULT_APP_KEY: "app-key"
+            SOKETI_DEFAULT_APP_SECRET: "app-secret"
+            SOKETI_DB_REDIS_HOST: redis
+            SOKETI_DB_REDIS_PASSWORD: redis_password
+            SOKETI_QUEUE_DRIVER: redis
+            SOKETI_CACHE_DRIVER: redis
+
+    nginx:
+        image: nginx:alpine
+        container_name: soketi-nginx
+        restart: unless-stopped
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf
+            - ./docker/nginx/sites/:/etc/nginx/sites-available/
+            - ./docker/nginx/ssl/:/etc/ssl/certs/
+        depends_on:
+            - app
+
+volumes:
+    mysql_data:
