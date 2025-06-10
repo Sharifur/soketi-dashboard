@@ -37,90 +37,74 @@ class DatabaseSeeder extends Seeder
 
         // Create sample Soketi applications
         SoketiApp::create([
-            'name' => 'Main Application',
-            'app_id' => random_int(000000000,999999999),
-            'app_key' => Str::random(16),
-            'app_secret' =>  Str::random(16),
-            'description' => 'Primary Soketi application for production use',
+            'app_name' => 'Main Application',
+            'app_description' => 'Primary Soketi application for production use',
+            'key' => Str::random(16),
+            'secret' => Str::random(16),
             'max_connections' => 1000,
             'enable_client_messages' => true,
-            'enable_statistics' => true,
-            'enable_webhooks' => false,
-            'is_active' => true,
-            'user_id' => $adminUser->id,
+            'enabled' => true,
+            'max_backend_events_per_sec' => 100,
+            'max_client_events_per_sec' => 50,
+            'max_read_req_per_sec' => 100,
+            'webhooks' => [],
+            'max_presence_members_per_channel' => 100,
+            'max_presence_member_size_in_kb' => 2,
+            'max_channel_name_length' => 100,
+            'max_event_channels_at_once' => 10,
+            'max_event_name_length' => 100,
+            'max_event_payload_in_kb' => 100,
+            'max_event_batch_size' => 10,
+            'enable_user_authentication' => true,
         ]);
 
         SoketiApp::create([
-            'name' => 'Chat Application',
-            'app_id' => random_int(000000000,999999999),
-            'app_key' => Str::random(16),
-            'app_secret' =>  Str::random(16),
-            'description' => 'Real-time chat application with presence channels',
+            'app_name' => 'Chat Application',
+            'app_description' => 'Real-time chat application with presence channels',
+            'key' => Str::random(16),
+            'secret' => Str::random(16),
             'max_connections' => 500,
             'enable_client_messages' => true,
-            'enable_statistics' => true,
-            'enable_webhooks' => true,
-            'webhook_urls' => [
-                ['url' => 'https://example.com/webhooks/soketi']
+            'enabled' => true,
+            'max_backend_events_per_sec' => 100,
+            'max_client_events_per_sec' => 50,
+            'max_read_req_per_sec' => 100,
+            'webhooks' => [
+                [
+                    'url' => 'https://example.com/webhooks/chat',
+                    'events' => ['channel_occupied', 'channel_vacated', 'member_added', 'member_removed']
+                ]
             ],
-            'webhook_events' => ['channel_occupied', 'channel_vacated', 'member_added', 'member_removed'],
-            'is_active' => true,
-            'user_id' => $adminUser->id,
+            'max_presence_members_per_channel' => 100,
+            'max_presence_member_size_in_kb' => 5,
+            'max_channel_name_length' => 100,
+            'max_event_channels_at_once' => 20,
+            'max_event_name_length' => 100,
+            'max_event_payload_in_kb' => 100,
+            'max_event_batch_size' => 20,
+            'enable_user_authentication' => true,
         ]);
 
         SoketiApp::create([
-            'name' => 'Notification Service',
-            'app_id' => random_int(000000000,999999999),
-            'app_key' => Str::random(16),
-            'app_secret' =>  Str::random(16),
-            'description' => 'Push notifications and alerts system',
-            'max_connections' => 250,
-            'enable_client_messages' => false,
-            'enable_statistics' => true,
-            'enable_webhooks' => true,
-            'webhook_urls' => [
-                ['url' => 'https://example.com/webhooks/notifications']
-            ],
-            'webhook_headers' => [
-                'Authorization' => 'Bearer your-token-here',
-                'X-App-Version' => '1.0'
-            ],
-            'webhook_events' => ['channel_occupied', 'client_event'],
-            'is_active' => true,
-            'user_id' => $demoUser->id,
-        ]);
-
-        SoketiApp::create([
-            'name' => 'Development App',
-            'app_id' => random_int(000000000,999999999),
-            'app_key' => Str::random(16),
-            'app_secret' =>  Str::random(16),
-            'description' => 'Development and testing environment',
+            'app_name' => 'Development App',
+            'app_description' => 'Development and testing environment',
+            'key' => Str::random(16),
+            'secret' => Str::random(16),
             'max_connections' => 50,
             'enable_client_messages' => true,
-            'enable_statistics' => true,
-            'enable_webhooks' => false,
-            'is_active' => false,
-            'user_id' => $demoUser->id,
-        ]);
-
-        SoketiApp::create([
-            'name' => 'Analytics Dashboard',
-            'app_id' => random_int(000000000,999999999),
-            'app_key' => Str::random(16),
-            'app_secret' =>  Str::random(16),
-            'description' => 'Real-time analytics and metrics visualization',
-            'max_connections' => 100,
-            'enable_client_messages' => false,
-            'enable_statistics' => true,
-            'enable_webhooks' => true,
-            'webhook_urls' => [
-                ['url' => 'https://analytics.example.com/webhook'],
-                ['url' => 'https://backup-analytics.example.com/webhook']
-            ],
-            'webhook_events' => ['channel_occupied', 'channel_vacated'],
-            'is_active' => true,
-            'user_id' => $adminUser->id,
+            'enabled' => false,
+            'max_backend_events_per_sec' => 50,
+            'max_client_events_per_sec' => 20,
+            'max_read_req_per_sec' => 50,
+            'webhooks' => [],
+            'max_presence_members_per_channel' => 50,
+            'max_presence_member_size_in_kb' => 1,
+            'max_channel_name_length' => 100,
+            'max_event_channels_at_once' => 5,
+            'max_event_name_length' => 100,
+            'max_event_payload_in_kb' => 50,
+            'max_event_batch_size' => 5,
+            'enable_user_authentication' => false,
         ]);
 
         $this->command->info('🎉 Demo data created successfully!');
@@ -136,8 +120,6 @@ class DatabaseSeeder extends Seeder
         $this->command->info('📱 Sample Apps Created:');
         $this->command->info('   - Main Application (production ready)');
         $this->command->info('   - Chat Application (with webhooks)');
-        $this->command->info('   - Notification Service (push notifications)');
         $this->command->info('   - Development App (inactive)');
-        $this->command->info('   - Analytics Dashboard (metrics)');
     }
 }

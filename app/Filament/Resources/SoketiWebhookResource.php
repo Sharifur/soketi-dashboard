@@ -225,9 +225,9 @@ class SoketiWebhookResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('app_id')
+                Tables\Filters\SelectFilter::make('id')
                     ->label('Application')
-                    ->options(SoketiApp::pluck('name', 'app_id'))
+                    ->options(SoketiApp::pluck('app_name', 'id'))
                     ->searchable(),
 
                 Tables\Filters\SelectFilter::make('status')

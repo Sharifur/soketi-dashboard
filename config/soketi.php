@@ -10,4 +10,5 @@ return [
     |
     */
     'config_path' => env('SOKETI_CONFIG_PATH', '/etc/soketi/config.json'),
+    'token' => env('SOKETI_API_TOKEN', ''),
 ];

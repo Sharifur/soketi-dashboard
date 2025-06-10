@@ -2,168 +2,83 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Str;
 
 class SoketiApp extends Model
 {
-    use HasFactory, SoftDeletes;
+    public $incrementing = false;
+    protected $keyType = 'string';
+    protected $primaryKey = 'id';
 
-    protected $fillable = [
-        'name',
-        'app_id',
-        'app_key',
-        'app_secret',
-        'max_connections',
-        'enable_client_messages',
-        'enable_statistics',
-        'enable_webhooks',
-        'webhook_urls',
-        'webhook_headers',
-        'webhook_events',
-        'is_active',
-        'description',
-        'user_id',
-    ];
-
-    protected $casts = [
-        'webhook_urls' => 'array',
-        'webhook_headers' => 'array',
-        'webhook_events' => 'array',
-        'enable_client_messages' => 'boolean',
-        'enable_statistics' => 'boolean',
-        'enable_webhooks' => 'boolean',
-        'is_active' => 'boolean',
-        'max_connections' => 'integer',
-    ];
-
-    protected $hidden = [
-        'app_secret',
-    ];
-
-    /**
-     * Get the connections for this app
-     */
-    public function connections(): HasMany
-    {
-        return $this->hasMany(SoketiConnection::class, 'app_id', 'app_id');
-    }
-
-    /**
-     * Get the webhooks for this app
-     */
-    public function webhooks(): HasMany
-    {
-        return $this->hasMany(SoketiWebhook::class, 'app_id', 'app_id');
-    }
-
-    /**
-     * Get the user that owns this app
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Generate a unique app ID
-     */
-    public static function generateAppId(): string
-    {
-        do {
-            $appId = 'app-' . Str::random(8);
-        } while (self::where('app_id', $appId)->exists());
-
-        return $appId;
-    }
-
-    /**
-     * Generate a unique app key
-     */
-    public static function generateAppKey(): string
-    {
-        do {
-            $appKey = Str::random(20);
-        } while (self::where('app_key', $appKey)->exists());
-
-        return $appKey;
-    }
-
-    /**
-     * Generate a unique app secret
-     */
-    public static function generateAppSecret(): string
-    {
-        return Str::random(40);
-    }
-
-    /**
-     * Get current connection count for this app
-     */
-    public function getCurrentConnectionCount(): int
-    {
-        return $this->connections()
-            ->where('is_connected', true)
-            ->count();
-    }
-
-    /**
-     * Check if app has reached max connections
-     */
-    public function hasReachedMaxConnections(): bool
-    {
-        if ($this->max_connections <= 0) {
-            return false; // Unlimited connections
-        }
-
-        return $this->getCurrentConnectionCount() >= $this->max_connections;
-    }
-
-    /**
-     * Get app status
-     */
-    public function getStatusAttribute(): string
-    {
-        if (!$this->is_active) {
-            return 'inactive';
-        }
-
-        if ($this->hasReachedMaxConnections()) {
-            return 'at_limit';
-        }
-
-        return 'active';
-    }
-
-    /**
-     * Scope for active apps only
-     */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Boot method to set default values
-     */
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($model) {
-            if (empty($model->app_id)) {
-                $model->app_id = self::generateAppId();
-            }
-            if (empty($model->app_key)) {
-                $model->app_key = self::generateAppKey();
-            }
-            if (empty($model->app_secret)) {
-                $model->app_secret = self::generateAppSecret();
+            if (empty($model->id)) {
+                do {
+                    $id = str_pad(random_int(100000000000, 999999999999), 12, '0', STR_PAD_LEFT);
+                } while (static::where('id', $id)->exists());
+
+                $model->id = $id;
             }
         });
     }
 
+    protected $fillable = [
+        'id',
+        'app_name',
+        'app_description',
+        'key',
+        'secret',
+        'max_connections',
+        'enable_client_messages',
+        'enabled',
+        'max_backend_events_per_sec',
+        'max_client_events_per_sec',
+        'max_read_req_per_sec',
+        'webhooks',
+        'max_presence_members_per_channel',
+        'max_presence_member_size_in_kb',
+        'max_channel_name_length',
+        'max_event_channels_at_once',
+        'max_event_name_length',
+        'max_event_payload_in_kb',
+        'max_event_batch_size',
+        'enable_user_authentication'
+    ];
+
+    protected $casts = [
+        'max_connections' => 'integer',
+        'enable_client_messages' => 'boolean',
+        'enabled' => 'boolean',
+        'max_backend_events_per_sec' => 'integer',
+        'max_client_events_per_sec' => 'integer',
+        'max_read_req_per_sec' => 'integer',
+        'webhooks' => 'json',
+        'max_presence_members_per_channel' => 'integer',
+        'max_presence_member_size_in_kb' => 'integer',
+        'max_channel_name_length' => 'integer',
+        'max_event_channels_at_once' => 'integer',
+        'max_event_name_length' => 'integer',
+        'max_event_payload_in_kb' => 'integer',
+        'max_event_batch_size' => 'integer',
+        'enable_user_authentication' => 'boolean'
+    ];
+
+    protected $attributes = [
+        'max_connections' => 1000,
+        'enable_client_messages' => true,
+        'enabled' => true
+    ];
+
+    public function connections()
+    {
+        return $this->hasMany(SoketiConnection::class, 'app_id', 'id');
+    }
+
+    public function getCurrentConnectionCount()
+    {
+        return $this->connections()->where('is_connected', true)->count();
+    }
 }
