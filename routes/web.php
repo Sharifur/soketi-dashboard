@@ -1,7 +1,10 @@
+]
 <?php
 
 use App\Http\Controllers\SoketiTestController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\SoketiWebhookController;
+
 
 Route::get('/', function () {
     return redirect('/admin');
@@ -18,3 +21,4 @@ Route::middleware(['auth'])->group(function () {
 
 });
 
+Route::post('soketi/webhook', [SoketiWebhookController::class, 'handle']);
