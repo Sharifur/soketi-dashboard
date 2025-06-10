@@ -37,6 +37,8 @@ return new class extends Migration
             $table->tinyInteger('max_event_batch_size')->nullable();
 
             $table->boolean('enable_user_authentication');   // Matches: tinyint(1)
+            $table->index(['id']);
+            $table->timestamps();
         });
 
         Schema::create('soketi_connections', function (Blueprint $table) {
@@ -53,7 +55,7 @@ return new class extends Migration
             $table->timestamp('disconnected_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('app_id')->references('app_id')->on('soketi_apps')->onDelete('cascade');
+            $table->foreign('app_id')->references('id')->on('soketi_apps')->onDelete('cascade');
             $table->index(['app_id', 'is_connected']);
             $table->index(['connected_at', 'disconnected_at']);
         });
@@ -73,7 +75,7 @@ return new class extends Migration
             $table->timestamp('next_retry_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('app_id')->references('app_id')->on('soketi_apps')->onDelete('cascade');
+            $table->foreign('app_id')->references('id')->on('soketi_apps')->onDelete('cascade');
             $table->index(['app_id', 'status']);
             $table->index(['event_name', 'sent_at']);
         });
@@ -87,7 +89,7 @@ return new class extends Migration
             $table->timestamp('recorded_at');
             $table->timestamps();
 
-            $table->foreign('app_id')->references('app_id')->on('soketi_apps')->onDelete('cascade');
+            $table->foreign('app_id')->references('id')->on('soketi_apps')->onDelete('cascade');
             $table->index(['app_id', 'metric_name', 'recorded_at']);
         });
     }
