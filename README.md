@@ -1,345 +1,81 @@
-# 🚀 Quick Start Guide - Laravel Soketi Dashboard
+# 🚀 Soketi Admin Dashboard
 
-## 🎯 What You'll Get
+## 🎯 Features
 
-A professional Soketi WebSocket dashboard with:
-- ✅ **Real-time monitoring** - Live connection stats and server metrics
-- ✅ **App management** - Create/edit/delete Soketi applications
-- ✅ **User authentication** - Secure login with roles
-- ✅ **Auto-deployment** - GitHub Actions CI/CD
-- ✅ **Docker support** - Easy deployment and scaling
+A professional Soketi WebSocket dashboard offering:
+- ✅ **Real-time monitoring** - Live connection stats and events
+- ✅ **App management** - Create and manage Soketi applications
+- ✅ **Debug events** - Monitor WebSocket events in real-time
+- ✅ **User authentication** - Secure multi-user access
 - ✅ **Modern UI** - Built with Filament 3
 
-## ⚡ Quick Setup (5 minutes)
+## ⚡ Quick Setup
 
-### Step 1: Clone and Setup
-
+### Step 1: Clone and Install
 ```bash
 # Clone the repository
-cd /var/www
-sudo git clone https://github.com/YOUR_USERNAME/soketi-dashboard.git
-sudo chown -R $USER:$USER soketi-dashboard
-cd soketi-dashboard
-
+git clone [https://github.com/YOUR_USERNAME/soketi-admin.git](https://github.com/YOUR_USERNAME/soketi-admin.git) cd soketi-admin
 # Install dependencies
-composer install
-npm install && npm run build
-
-# Setup environment
-cp .env.example .env
-php artisan key:generate
-```
-
+composer install npm install && npm run build
+````
 ### Step 2: Configure Environment
 
 Edit `.env` file:
-
-```env
-APP_NAME="Soketi Dashboard"
-APP_URL=https://soketi.taskip.net
-
-# SQLite Database (much simpler!)
-DB_CONNECTION=sqlite
-DB_DATABASE=/var/www/soketi-dashboard/database/database.sqlite
-DB_FOREIGN_KEYS=true
-
-# Redis for caching and sessions
-REDIS_HOST=redis
-REDIS_PASSWORD=redis_password
-
+````bash
+# Copy environment file
+cp .env.example .env
+# Generate application key
+php artisan key:generate
+env APP_NAME="Soketi Admin" APP_URL=[http://your-domain.com](http://your-domain.com)
+# Database Configuration
+DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=soketi_admin DB_USERNAME=your_username DB_PASSWORD=your_password
 # Soketi Configuration
-SOKETI_METRICS_URL=http://soketi:9601/metrics
-PUSHER_HOST=soketi
-PUSHER_PORT=6001
-```
+SOKETI_HOST=localhost SOKETI_PORT=6001 PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret
+````
 
-### Step 3: Start Services
-
-```bash
-# Create SQLite database
-mkdir -p database
-touch database/database.sqlite
-chmod 664 database/database.sqlite
-
-# Start with Docker
-docker-compose up -d
-
-# Or start manually
+### Step 3: Database Setup
+````bash
+# Create database
+mysql -u root -p CREATE DATABASE soketi_admin;
+# Run migrations
 php artisan migrate --seed
+````
+
+### Step 4: Start Services
+
+````bash
+# Start Laravel application
 php artisan serve
-```
+# Start Soketi server (in a separate terminal)
+soketi start
+````
 
-### Step 4: Access Dashboard
+### Step 5: Access Dashboard
 
-- **Dashboard**: https://soketi.taskip.net/admin
-- **Default Login**: admin@admin.com / password
-
-## 🔧 GitHub Integration Setup
-
-### 1. Repository Setup
-
-```bash
-# Initialize git
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/soketi-dashboard.git
-git push -u origin main
-```
-
-### 2. GitHub Secrets
-
-Go to your repository → Settings → Secrets and variables → Actions
-
-Add these secrets:
-
-```
-STAGING_HOST=your-staging-server-ip
-STAGING_USERNAME=your-server-username
-STAGING_PRIVATE_KEY=your-private-ssh-key
-
-PRODUCTION_HOST=your-production-server-ip
-PRODUCTION_USERNAME=your-server-username
-PRODUCTION_PRIVATE_KEY=your-private-ssh-key
-
-SLACK_WEBHOOK_URL=your-slack-webhook (optional)
-```
-
-### 3. Server Preparation
-
-On your server:
-
-```bash
-# Create deployment directory
-sudo mkdir -p /var/www/soketi-dashboard
-sudo chown $USER:$USER /var/www/soketi-dashboard
-
-# Make deploy script executable
-chmod +x deploy.sh
-
-# Setup SSH key authentication
-# (Add your GitHub Actions public key to ~/.ssh/authorized_keys)
-```
-
-## 🚀 Automatic Deployment
-
-Now every push to `main` branch will:
-
-1. ✅ **Run tests** automatically
-2. 🎨 **Build frontend assets**
-3. 🔒 **Security scan**
-4. 🚀 **Deploy to staging**
-5. 📊 **Performance audit**
-
-Push to `production` branch for production deployment.
+- **URL**: http://localhost:8000/admin
+- **Default Login**: admin@example.com / password
 
 ## 📊 Dashboard Features
 
-### **Applications Management**
-- Create new Soketi applications
-- Configure webhooks and settings
-- Monitor connection limits
-- Copy credentials easily
+### Applications Management
+- Create and manage Soketi applications
+- View application statistics
+- Configure webhooks
+- Manage access keys
 
-### **Real-time Statistics**
-- Live connection counts
-- Server status monitoring
-- Message throughput
-- Performance metrics
+### Debug Events Monitor
+- Real-time WebSocket event logging
+- Filter events by type
+- View detailed event payloads
+- Track connections and subscriptions
 
-### **User Management**
-- Multi-user support
-- Role-based permissions
+### User Management
+- Create and manage users
+- Role-based access control
 - Activity logging
 
-## 🔧 Customization
+## 🔧 Configuration
 
-### Add Custom Widgets
+### Soketi Server Settings
 
-```bash
-php artisan make:filament-widget MyCustomWidget
-```
-
-### Add New Resources
-
-```bash
-php artisan make:filament-resource MyResource
-```
-
-### Custom Soketi Metrics
-
-Edit `app/Services/SoketiStatsService.php` to add custom metrics from your Soketi server.
-
-## 🐳 Docker Commands
-
-```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f soketi
-
-# Restart specific service
-docker-compose restart app
-
-# Scale application
-docker-compose up -d --scale app=3
-
-# Stop all services
-docker-compose down
-```
-
-## 🔍 Monitoring & Debugging
-
-### Application Logs
-```bash
-tail -f storage/logs/laravel.log
-```
-
-### Soketi Logs
-```bash
-docker-compose logs -f soketi
-```
-
-### Server Status
-```bash
-# Check all services
-docker-compose ps
-
-# Health check
-./deploy.sh health
-```
-
-## 🚨 Troubleshooting
-
-### Common Issues
-
-**1. SQLite Database Issues**
-```bash
-# Create database directory and file
-mkdir -p database
-touch database/database.sqlite
-chmod 664 database/database.sqlite
-
-# Reset database
-rm database/database.sqlite
-touch database/database.sqlite
-php artisan migrate:fresh --seed
-```
-
-**2. Soketi Not Responding**
-```bash
-# Check Soketi container
-docker-compose logs soketi
-
-# Restart Soketi
-docker-compose restart soketi
-```
-
-**3. Permission Issues**
-```bash
-# Fix permissions
-sudo chown -R www-data:www-data storage bootstrap/cache database
-chmod -R 775 storage bootstrap/cache database
-chmod 664 database/database.sqlite
-```
-
-**4. Assets Not Loading**
-```bash
-# Rebuild assets
-npm run build
-php artisan view:clear
-```
-
-## 📈 Production Optimization
-
-### Performance Tuning
-
-```bash
-# Enable OPcache
-sudo nano /etc/php/8.2/fpm/php.ini
-# opcache.enable=1
-# opcache.memory_consumption=256
-
-# Configure queue workers
-php artisan queue:work --daemon
-
-# Setup supervisor for queue workers
-sudo nano /etc/supervisor/conf.d/soketi-worker.conf
-```
-
-### Security Hardening
-
-```bash
-# Update packages
-sudo apt update && sudo apt upgrade
-
-# Configure firewall
-sudo ufw allow 22,80,443,6001,9601/tcp
-
-# SSL with Let's Encrypt
-sudo certbot --nginx -d soketi.taskip.net
-```
-
-### Monitoring
-
-Add monitoring tools:
-- **New Relic** for application performance
-- **Sentry** for error tracking
-- **Prometheus** for metrics collection
-- **Grafana** for visualization
-
-## 🔄 Maintenance
-
-### Regular Tasks
-
-```bash
-# Update dependencies (monthly)
-composer update
-npm update
-
-# Clean up logs (weekly)  
-php artisan log:clear
-
-# Backup database (daily)
-mysqldump soketi_dashboard > backup.sql
-
-# Monitor disk space
-df -h
-```
-
-### Updates & Upgrades
-
-```bash
-# Laravel updates
-composer update laravel/framework
-
-# Filament updates  
-composer update filament/filament
-
-# Deploy updates
-git add .
-git commit -m "Update dependencies"
-git push origin main
-```
-
-## 📞 Support
-
-- **Documentation**: [Full Setup Guide](README.md)
-- **Issues**: Create GitHub issue
-- **Discord**: Join our community
-- **Email**: support@soketi.taskip.net
-
-## 🎉 Success!
-
-Your Soketi Dashboard is now running with automatic deployment!
-
-**Next Steps:**
-1. 🔐 Change default credentials
-2. 🎨 Customize the dashboard design
-3. 📊 Add custom metrics
-4. 🔗 Integrate with your applications
-5. 📈 Scale as needed
-
-Happy WebSocket managing! 🚀
+Update your Soketi server configuration to use MySQL adapter:
