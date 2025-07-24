@@ -146,7 +146,7 @@ jobs:
 
             # Health check
             sleep 3
-            if curl -f -s http://localhost > /dev/null; then
+            if curl -f -s http://127.0.0.1 > /dev/null; then
               echo "✅ Health check passed"
             else
               echo "❌ Health check failed"

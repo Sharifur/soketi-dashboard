@@ -1,0 +1,16 @@
+{
+  "debug": true,
+  "appManager": {
+    "driver": "array",
+    "array": {
+      "apps": [
+        {
+          "id": "153722162515",
+          "key": "T9uf4MLVYU1nX1T7",
+          "secret": "6oOe6mC9KVe4GZsZ",
+          "enabled": true
+        }
+      ]
+    }
+  }
+}

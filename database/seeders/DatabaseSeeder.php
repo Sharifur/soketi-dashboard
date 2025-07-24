@@ -35,77 +35,68 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // Create sample Soketi applications
-        SoketiApp::create([
-            'app_name' => 'Main Application',
-            'app_description' => 'Primary Soketi application for production use',
-            'key' => Str::random(16),
-            'secret' => Str::random(16),
-            'max_connections' => 1000,
-            'enable_client_messages' => true,
-            'enabled' => true,
-            'max_backend_events_per_sec' => 100,
-            'max_client_events_per_sec' => 50,
-            'max_read_req_per_sec' => 100,
-            'webhooks' => [],
-            'max_presence_members_per_channel' => 100,
-            'max_presence_member_size_in_kb' => 2,
-            'max_channel_name_length' => 100,
-            'max_event_channels_at_once' => 10,
-            'max_event_name_length' => 100,
-            'max_event_payload_in_kb' => 100,
-            'max_event_batch_size' => 10,
-            'enable_user_authentication' => true,
-        ]);
-
-        SoketiApp::create([
-            'app_name' => 'Chat Application',
-            'app_description' => 'Real-time chat application with presence channels',
-            'key' => Str::random(16),
-            'secret' => Str::random(16),
-            'max_connections' => 500,
-            'enable_client_messages' => true,
-            'enabled' => true,
-            'max_backend_events_per_sec' => 100,
-            'max_client_events_per_sec' => 50,
-            'max_read_req_per_sec' => 100,
-            'webhooks' => [
-                [
-                    'url' => 'https://example.com/webhooks/chat',
-                    'events' => ['channel_occupied', 'channel_vacated', 'member_added', 'member_removed']
-                ]
+        $apps = [
+            [
+                'id' => 'local-app',
+                'app_name' => 'Local Development App',
+                'app_description' => 'Application for local development environment',
+                'key' => 'local-app-key',
+                'secret' => 'local-app-secret',
+                'max_connections' => 1000,
+                'enable_client_messages' => true,
+                'enabled' => true,
+                'max_backend_events_per_sec' => 1000,
+                'max_client_events_per_sec' => 100,
+                'max_read_req_per_sec' => 1000,
+                'webhooks' => json_encode([]),
+                'max_presence_members_per_channel' => 100,
+                'max_presence_member_size_in_kb' => 2,
+                'max_channel_name_length' => 200,
+                'max_event_channels_at_once' => 100,
+                'max_event_name_length' => 200,
+                'max_event_payload_in_kb' => 100,
+                'max_event_batch_size' => 10,
+                'enable_user_authentication' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
             ],
-            'max_presence_members_per_channel' => 100,
-            'max_presence_member_size_in_kb' => 5,
-            'max_channel_name_length' => 100,
-            'max_event_channels_at_once' => 20,
-            'max_event_name_length' => 100,
-            'max_event_payload_in_kb' => 100,
-            'max_event_batch_size' => 20,
-            'enable_user_authentication' => true,
-        ]);
+            [
+                'id' => 'production-app',
+                'app_name' => 'Production App',
+                'app_description' => 'Application for production environment',
+                'key' => Str::random(32),
+                'secret' => Str::random(32),
+                'max_connections' => 5000,
+                'enable_client_messages' => true,
+                'enabled' => true,
+                'max_backend_events_per_sec' => 500,
+                'max_client_events_per_sec' => 50,
+                'max_read_req_per_sec' => 500,
+                'webhooks' => json_encode([
+                    [
+                        'url' => 'https://your-app.com/webhooks/soketi',
+                        'event_types' => ['channel_occupied', 'channel_vacated', 'member_added', 'member_removed']
+                    ]
+                ]),
+                'max_presence_members_per_channel' => 50,
+                'max_presence_member_size_in_kb' => 1,
+                'max_channel_name_length' => 100,
+                'max_event_channels_at_once' => 50,
+                'max_event_name_length' => 100,
+                'max_event_payload_in_kb' => 50,
+                'max_event_batch_size' => 5,
+                'enable_user_authentication' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        ];
 
-        SoketiApp::create([
-            'app_name' => 'Development App',
-            'app_description' => 'Development and testing environment',
-            'key' => Str::random(16),
-            'secret' => Str::random(16),
-            'max_connections' => 50,
-            'enable_client_messages' => true,
-            'enabled' => false,
-            'max_backend_events_per_sec' => 50,
-            'max_client_events_per_sec' => 20,
-            'max_read_req_per_sec' => 50,
-            'webhooks' => [],
-            'max_presence_members_per_channel' => 50,
-            'max_presence_member_size_in_kb' => 1,
-            'max_channel_name_length' => 100,
-            'max_event_channels_at_once' => 5,
-            'max_event_name_length' => 100,
-            'max_event_payload_in_kb' => 50,
-            'max_event_batch_size' => 5,
-            'enable_user_authentication' => false,
-        ]);
+        foreach ($apps as $app) {
+            \DB::table('soketi_apps')->updateOrInsert(
+                ['id' => $app['id']],
+                $app
+            );
+        }
 
         $this->command->info('🎉 Demo data created successfully!');
         $this->command->info('');

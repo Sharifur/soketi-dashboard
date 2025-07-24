@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources;
 
+
 use App\Filament\Resources\SoketiAppResource\Pages;
+use App\Filament\Resources\SoketiAppResource\Pages\ViewSoketiApp;
 use App\Models\SoketiApp;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -70,6 +72,7 @@ class SoketiAppResource extends Resource
                             ->required()
                             ->password()
                             ->revealable()
+
                             ->default(fn () => Str::random(32)),
 
                         Forms\Components\Toggle::make('enabled')
@@ -240,6 +243,7 @@ class SoketiAppResource extends Resource
         return [
             'index' => Pages\ListSoketiApps::route('/'),
             'create' => Pages\CreateSoketiApp::route('/create'),
+            'view' => Pages\ViewSoketiApp::route('/{record}'),
             'edit' => Pages\EditSoketiApp::route('/{record}/edit'),
         ];
     }

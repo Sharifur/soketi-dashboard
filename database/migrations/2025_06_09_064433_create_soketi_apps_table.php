@@ -15,8 +15,8 @@ return new class extends Migration
             $table->string('id')->primary(); // Matches: varchar(255) PRIMARY KEY
             $table->string('app_name'); // Matches: varchar(255) PRIMARY KEY
             $table->string('app_description')->nullable(); // Matches: varchar(255) PRIMARY KEY
-            $table->string('key');           // Matches: varchar(255)
-            $table->string('secret');        // Matches: varchar(255)
+            $table->string('key', 40);           // Matches: varchar(255)
+            $table->string('secret', 40);        // Matches: varchar(255)
 
             $table->integer('max_connections')->default(1000);              // Matches: integer(10)
             $table->boolean('enable_client_messages')->default(true);       // Matches: tinyint(1)
@@ -35,6 +35,7 @@ return new class extends Migration
             $table->tinyInteger('max_event_name_length')->nullable();
             $table->tinyInteger('max_event_payload_in_kb')->nullable();
             $table->tinyInteger('max_event_batch_size')->nullable();
+            $table->string('status', 40)->default('active');
 
             $table->boolean('enable_user_authentication');   // Matches: tinyint(1)
             $table->index(['id']);

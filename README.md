@@ -30,7 +30,7 @@ env APP_NAME="Soketi Admin" APP_URL=[http://your-domain.com](http://your-domain.
 # Database Configuration
 DB_CONNECTION=mysql DB_HOST=127.0.0.1 DB_PORT=3306 DB_DATABASE=soketi_admin DB_USERNAME=your_username DB_PASSWORD=your_password
 # Soketi Configuration
-SOKETI_HOST=localhost SOKETI_PORT=6001 PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret
+SOKETI_HOST=127.0.0.1 SOKETI_PORT=6001 PUSHER_APP_ID=app-id PUSHER_APP_KEY=app-key PUSHER_APP_SECRET=app-secret
 ````
 
 ### Step 3: Database Setup
@@ -52,7 +52,7 @@ soketi start
 
 ### Step 5: Access Dashboard
 
-- **URL**: http://localhost:8000/admin
+- **URL**: http://127.0.0.1:8000/admin
 - **Default Login**: admin@example.com / password
 
 ## 📊 Dashboard Features

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Carbon\Carbon;
 
 class SoketiConnection extends Model
 {
@@ -30,33 +31,43 @@ class SoketiConnection extends Model
         'disconnected_at' => 'datetime',
     ];
 
-    /**
-     * Get the Soketi app that owns this connection
-     */
+    // Relationships
     public function soketiApp(): BelongsTo
     {
-        return $this->belongsTo(SoketiApp::class, 'app_id', 'app_id');
+        return $this->belongsTo(SoketiApp::class, 'app_id', 'id');
     }
 
-    /**
-     * Scope for active connections only
-     */
+    // Scopes
     public function scopeConnected($query)
     {
         return $query->where('is_connected', true);
     }
 
-    /**
-     * Scope for disconnected connections only
-     */
     public function scopeDisconnected($query)
     {
         return $query->where('is_connected', false);
     }
 
-    /**
-     * Get connection duration
-     */
+    public function scopeByChannel($query, string $channel)
+    {
+        return $query->where('channel_name', $channel);
+    }
+
+    public function scopeByUser($query, string $userId)
+    {
+        return $query->whereJsonContains('user_data->user_id', $userId);
+    }
+
+    public function scopeActiveAt($query, Carbon $dateTime)
+    {
+        return $query->where('connected_at', '<=', $dateTime)
+            ->where(function ($q) use ($dateTime) {
+                $q->whereNull('disconnected_at')
+                    ->orWhere('disconnected_at', '>', $dateTime);
+            });
+    }
+
+    // Utility Methods
     public function getDurationAttribute(): ?int
     {
         if (!$this->connected_at) {
@@ -67,9 +78,6 @@ class SoketiConnection extends Model
         return $this->connected_at->diffInSeconds($endTime);
     }
 
-    /**
-     * Get formatted duration
-     */
     public function getFormattedDurationAttribute(): string
     {
         $duration = $this->duration;
@@ -87,5 +95,52 @@ class SoketiConnection extends Model
         }
 
         return round($duration / 3600, 1) . 'h';
+    }
+
+    public function getUserId(): ?string
+    {
+        return $this->user_data['user_id'] ?? null;
+    }
+
+    public function getLocation(): ?string
+    {
+        return $this->user_data['location'] ?? null;
+    }
+
+    public function getBrowser(): ?string
+    {
+        if (!$this->user_agent) {
+            return null;
+        }
+
+        // Simple browser detection
+        if (str_contains($this->user_agent, 'Chrome')) {
+            return 'Chrome';
+        } elseif (str_contains($this->user_agent, 'Firefox')) {
+            return 'Firefox';
+        } elseif (str_contains($this->user_agent, 'Safari')) {
+            return 'Safari';
+        } elseif (str_contains($this->user_agent, 'Edge')) {
+            return 'Edge';
+        }
+
+        return 'Unknown';
+    }
+
+    public function disconnect(): void
+    {
+        $this->update([
+            'is_connected' => false,
+            'disconnected_at' => now(),
+        ]);
+    }
+
+    public function isLongRunning(int $hours = 24): bool
+    {
+        if (!$this->connected_at || !$this->is_connected) {
+            return false;
+        }
+
+        return $this->connected_at->diffInHours(now()) >= $hours;
     }
 }
